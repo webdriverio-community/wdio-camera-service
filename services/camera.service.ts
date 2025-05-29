@@ -1,5 +1,4 @@
-import {Testrunner} from '@wdio/types/build/Options';
-import {Services} from '@wdio/types';
+import {Services, Options} from '@wdio/types';
 import {SevereServiceError} from 'webdriverio';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -18,7 +17,7 @@ export default class CameraService implements Services.ServiceInstance {
     }
   }
 
-  async onPrepare() {
+  onPrepare() {
     if (!fs.existsSync(this._options.videoDirectory)) {
       fs.mkdirSync(this._options.videoDirectory, {recursive: true});
     }
@@ -28,7 +27,7 @@ export default class CameraService implements Services.ServiceInstance {
     cid: string,
     capabilities: WebdriverIO.Capabilities,
     _specs: string[],
-    _args: Testrunner,
+    _args: Options.Testrunner,
     _execArgv: string[],
   ): void {
     const baseFeed = fs.readFileSync(path.resolve(process.cwd(), this._options.defaultCameraFeed));
@@ -53,9 +52,8 @@ export default class CameraService implements Services.ServiceInstance {
     this.browser = browser;
     this.browser.addCommand(
       'changeCameraSource',
-      async function (videoPath: string) {
-        // @ts-ignore
-        const cameraSourceMatch = (this.requestedCapabilities['goog:chromeOptions']?.args as string[])
+      async (videoPath: string) => {
+        const cameraSourceMatch = (this.browser?.requestedCapabilities['goog:chromeOptions']?.args as string[])
           ?.find((arg) => arg.includes('--use-file-for-fake-video-capture'))
           ?.match(/--use-file-for-fake-video-capture=(\S+)/);
 
@@ -75,8 +73,7 @@ export default class CameraService implements Services.ServiceInstance {
           const mockedVideo = fs.readFileSync(sourceCameraFeedPath);
           fs.writeFileSync(defaultCameraFeedPath, new Uint8Array(mockedVideo));
 
-          // @ts-ignore
-          await this.refresh();
+          await this.browser?.refresh();
         }
       },
     );

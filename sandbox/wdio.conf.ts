@@ -1,10 +1,8 @@
-import CameraService from '../src/camera.service.ts';
-
 export const config: WebdriverIO.Config = {
 
   tsConfigPath: './tsconfig.json',
   specs: [
-    './test/specs/**/*.e2e.ts',
+    './test/specs/**/camera.e2e.ts',
   ],
   // Patterns to exclude.
   exclude: [
@@ -27,8 +25,7 @@ export const config: WebdriverIO.Config = {
   connectionRetryCount: 3,
 
   services: [
-    // @ts-ignore
-    [CameraService, {
+    ['camera', {
       defaultCameraFeed: './camera/default.mjpeg',
       videoDirectory: './camera/video',
     }],

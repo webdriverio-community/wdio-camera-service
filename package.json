@@ -1,5 +1,9 @@
 {
   "name": "wdio-camera-service",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/Winify/wdio-camera-service.git"
+  },
   "version": "1.0.0",
   "keywords": [
     "wdio-plugin",
@@ -7,24 +11,31 @@
   ],
   "license": "MIT",
   "type": "module",
-  "main": "./build/index.js",
-  "module": "./build/index.js",
-  "types": "./build/index.d.ts",
+  "main": "./build/types/index.js",
+  "module": "./build/types/index.js",
+  "types": "./build/types/index.d.ts",
   "files": [
     "build"
   ],
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
-    "prebuild": "rimraf lib --glob ./*.tgz",
-    "build": "tsup",
-    "postbuild": "npm pack"
+    "prebuild": "rimraf build --glob ./*.tgz",
+    "build": "tsc",
+    "postbuild": "npm pack",
+    "test:local:win": "npm run build && cd sandbox && npm rm %npm_package_name% && npm install ../wdio-camera-service-%npm_package_version%.tgz",
+    "test:local:ux": "npm run build && cd sandbox && npm rm $npm_package_name && npm install ../wdio-camera-service-$npm_package_version.tgz"
   },
   "devDependencies": {
     "rimraf": "^6.0.1",
-    "tsup": "^8.5.0",
     "typescript": "^5.8.3"
   },
-  "dependencies": {
-    "@wdio/types": "^9.14.0",
-    "webdriverio": "^9.14.0"
+  "peerDependencies": {
+    "@wdio/types": ">=9.0.0",
+    "webdriverio": ">=9.0.0"
   }
 }

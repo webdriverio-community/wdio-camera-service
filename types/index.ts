@@ -1,5 +1,6 @@
-import CameraService from '../src/camera.service';
+import CameraService from '../services/camera.service';
 export default CameraService;
+export const launcher = CameraService
 
 declare global {
   namespace WebdriverIO {
