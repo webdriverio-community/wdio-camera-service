@@ -1,4 +1,4 @@
-import {Services, Options} from '@wdio/types';
+import {Options, Services} from '@wdio/types';
 import {SevereServiceError} from 'webdriverio';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -30,21 +30,33 @@ export default class CameraService implements Services.ServiceInstance {
     _args: Options.Testrunner,
     _execArgv: string[],
   ): void {
-    const baseFeed = fs.readFileSync(path.resolve(process.cwd(), this._options.defaultCameraFeed));
-    const sessionVideoFilePath: string = path.resolve(process.cwd(), this._options.videoDirectory, `${cid}.mjpeg`);
+    if (capabilities.browserName?.toLowerCase().includes('chrom')) {
+      const baseFeed = fs.readFileSync(path.resolve(process.cwd(), this._options.defaultCameraFeed));
+      const sessionVideoFilePath: string = path.resolve(process.cwd(), this._options.videoDirectory, `${cid}.mjpeg`);
 
-    fs.writeFileSync(sessionVideoFilePath, new Uint8Array(baseFeed));
+      fs.writeFileSync(sessionVideoFilePath, new Uint8Array(baseFeed));
 
-    if (capabilities['goog:chromeOptions']?.args) {
-      capabilities['goog:chromeOptions'].args.push(`--use-file-for-fake-video-capture=${sessionVideoFilePath}`);
-    } else {
-      capabilities['goog:chromeOptions'] = {
-        args: [
-          '--use-fake-device-for-media-stream',
-          '--use-fake-ui-for-media-stream',
-          `--use-file-for-fake-video-capture=${sessionVideoFilePath}`
-        ]
+      const args = [
+        '--use-fake-device-for-media-stream',
+        '--use-fake-ui-for-media-stream',
+        `--use-file-for-fake-video-capture=${sessionVideoFilePath}`,
+      ];
+
+      if (capabilities['goog:chromeOptions']) {
+        // chromeOptions exists
+        if (capabilities['goog:chromeOptions'].args) {
+          // Both chromeOptions and args exist - pushing to existing args
+          capabilities['goog:chromeOptions'].args.push(...args);
+        } else {
+          // chromeOptions exists but no args - adding args array
+          capabilities['goog:chromeOptions'].args = args;
+        }
+      } else {
+        // No chromeOptions - creating the whole object
+        capabilities['goog:chromeOptions'] = {args};
       }
+    } else {
+      console.log(`Injecting camera source only supported in Chrome browsers (current browserName: ${capabilities.browserName})`);
     }
   }
 
