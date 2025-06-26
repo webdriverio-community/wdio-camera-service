@@ -1,0 +1,41 @@
+{
+  "name": "wdio-camera-service",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/Winify/wdio-camera-service.git"
+  },
+  "version": "1.0.0",
+  "keywords": [
+    "wdio-plugin",
+    "wdio-service"
+  ],
+  "license": "MIT",
+  "type": "module",
+  "main": "./build/types/index.js",
+  "module": "./build/types/index.js",
+  "types": "./build/types/index.d.ts",
+  "files": [
+    "build"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "prebuild": "rimraf build --glob ./*.tgz",
+    "build": "tsc",
+    "postbuild": "npm pack",
+    "test:local:win": "npm run build && cd sandbox && npm rm %npm_package_name% && npm install ../wdio-camera-service-%npm_package_version%.tgz",
+    "test:local:ux": "npm run build && cd sandbox && npm rm $npm_package_name && npm install ../wdio-camera-service-$npm_package_version.tgz"
+  },
+  "devDependencies": {
+    "rimraf": "^6.0.1",
+    "typescript": "^5.8.3"
+  },
+  "peerDependencies": {
+    "@wdio/types": ">=9.0.0",
+    "webdriverio": ">=9.0.0"
+  }
+}
