@@ -15,7 +15,8 @@
   "module": "./build/types/index.js",
   "types": "./build/types/index.d.ts",
   "files": [
-    "build"
+    "build",
+    "README.md"
   ],
   "engines": {
     "node": ">=18"
