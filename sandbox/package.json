@@ -16,6 +16,6 @@
     "@wdio/spec-reporter": "^9.14.0"
   },
   "dependencies": {
-    "wdio-camera-service": "file:../wdio-camera-service-1.0.0.tgz"
+    "wdio-camera-service": "file:../wdio-camera-service-1.0.1.tgz"
   }
 }
