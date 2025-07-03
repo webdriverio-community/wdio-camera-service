@@ -12,7 +12,7 @@ A WebdriverIO service that enables camera feed injection for testing application
 ## Installation
 
 ```bash
-npm install --save-dev @your-org/wdio-camera-service
+npm install --save-dev wdio-camera-service
 ```
 
 ## Configuration

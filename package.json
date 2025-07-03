@@ -1,15 +1,19 @@
 {
   "name": "wdio-camera-service",
+  "version": "1.0.1",
+  "author": "Vince Graics",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git://github.com/Winify/wdio-camera-service.git"
   },
-  "version": "1.0.0",
   "keywords": [
     "wdio-plugin",
-    "wdio-service"
+    "wdio-service",
+    "webdriverio",
+    "camera",
+    "mock"
   ],
-  "license": "MIT",
   "type": "module",
   "main": "./build/types/index.js",
   "module": "./build/types/index.js",
@@ -33,7 +37,7 @@
   },
   "devDependencies": {
     "rimraf": "^6.0.1",
-    "typescript": "^5.8.3"
+    "typescript": "5.8"
   },
   "peerDependencies": {
     "@wdio/types": ">=9.0.0",
