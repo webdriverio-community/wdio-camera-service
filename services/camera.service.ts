@@ -1,5 +1,5 @@
-import {Options, Services} from '@wdio/types';
-import {SevereServiceError} from 'webdriverio';
+import type { Options, Services } from '@wdio/types';
+import { SevereServiceError } from 'webdriverio';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -19,7 +19,7 @@ export default class CameraService implements Services.ServiceInstance {
 
   onPrepare() {
     if (!fs.existsSync(this._options.videoDirectory)) {
-      fs.mkdirSync(this._options.videoDirectory, {recursive: true});
+      fs.mkdirSync(this._options.videoDirectory, { recursive: true });
     }
   }
 
@@ -53,7 +53,7 @@ export default class CameraService implements Services.ServiceInstance {
         }
       } else {
         // No chromeOptions - creating the whole object
-        capabilities['goog:chromeOptions'] = {args};
+        capabilities['goog:chromeOptions'] = { args };
       }
     } else {
       console.log(`Injecting camera source only supported in Chrome browsers (current browserName: ${capabilities.browserName})`);
