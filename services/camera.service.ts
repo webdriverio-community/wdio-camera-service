@@ -10,6 +10,7 @@ interface CameraServiceOptions {
 
 export default class CameraService implements Services.ServiceInstance {
   private browser: WebdriverIO.Browser | undefined;
+  private androidVideoDirectory: string = '/storage/emulated/0/Android/data/com.android.chrome/files/Download';
 
   constructor(private readonly _options: CameraServiceOptions) {
     if (!this._options.videoDirectory || !this._options.defaultCameraFeed) {
@@ -32,9 +33,13 @@ export default class CameraService implements Services.ServiceInstance {
   ): void {
     if (capabilities.browserName?.toLowerCase().includes('chrom')) {
       const baseFeed = fs.readFileSync(path.resolve(process.cwd(), this._options.defaultCameraFeed));
-      const sessionVideoFilePath: string = path.resolve(process.cwd(), this._options.videoDirectory, `${cid}.mjpeg`);
+      let sessionVideoFilePath: string = path.resolve(process.cwd(), this._options.videoDirectory, `${cid}.mjpeg`);
 
-      fs.writeFileSync(sessionVideoFilePath, new Uint8Array(baseFeed));
+      if (capabilities.platformName?.toLowerCase().includes('android')) {
+        sessionVideoFilePath = path.resolve(this.androidVideoDirectory, `${cid}.mjpeg`);
+      } else {
+        fs.writeFileSync(sessionVideoFilePath, new Uint8Array(baseFeed));
+      }
 
       const args = [
         '--use-fake-device-for-media-stream',
@@ -65,6 +70,9 @@ export default class CameraService implements Services.ServiceInstance {
     this.browser.addCommand(
       'changeCameraSource',
       async (videoPath: string) => {
+        const isChrome = this.browser?.capabilities.browserName?.toLowerCase().includes('chrome');
+        const isAndroid = this.browser?.capabilities.platformName?.toLowerCase().includes('android');
+
         const cameraSourceMatch = (this.browser?.requestedCapabilities['goog:chromeOptions']?.args as string[])
           ?.find((arg) => arg.includes('--use-file-for-fake-video-capture'))
           ?.match(/--use-file-for-fake-video-capture=(\S+)/);
@@ -73,19 +81,22 @@ export default class CameraService implements Services.ServiceInstance {
 
         if (cameraSource) {
           const defaultCameraFeedPath = path.resolve(cameraSource);
-          if (!fs.existsSync(defaultCameraFeedPath)) {
-            throw new Error(`Default camera feed ${defaultCameraFeedPath} does not exist`);
-          }
-
           const sourceCameraFeedPath = path.resolve(process.cwd(), videoPath);
           if (!fs.existsSync(sourceCameraFeedPath)) {
             throw new Error(`New source camera feed ${sourceCameraFeedPath} does not exist`);
           }
+          if (isChrome && !isAndroid) {
+            if (!fs.existsSync(defaultCameraFeedPath)) {
+              throw new Error(`Default camera feed ${defaultCameraFeedPath} does not exist`);
+            }
 
-          const mockedVideo = fs.readFileSync(sourceCameraFeedPath);
-          fs.writeFileSync(defaultCameraFeedPath, new Uint8Array(mockedVideo));
-
-          await this.browser?.refresh();
+            const mockedVideo = fs.readFileSync(sourceCameraFeedPath);
+            fs.writeFileSync(defaultCameraFeedPath, new Uint8Array(mockedVideo));
+          } else if (isChrome && isAndroid) {
+            const mockedVideo = fs.readFileSync(sourceCameraFeedPath);
+            const encoded = Buffer.from(mockedVideo).toString('base64');
+            await this.browser?.pushFile(defaultCameraFeedPath, encoded);
+          }
         }
       },
     );
