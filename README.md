@@ -42,13 +42,21 @@ export const config: WebdriverIO.Config = {
 
 ## Browser Support
 
-- ✅ **Chrome/Chromium** - Full support
+- ✅ **Chrome/Chromium/Android Chrome** - Full support
 - ❌ **Firefox** - Not supported
 - ❌ **Safari** - Not supported
 - ❌ **Edge** - Not supported (unless Chromium-based)
 
 > **Note**: This service only works with Chrome/Chromium browsers as it relies on Chrome-specific command line arguments for camera mocking.
 
+### Android SDK Supports (With Chrome)
+| SDK | Version | Support? |
+|-----|---------|----------|
+| 31 | 12 | ✅ |
+| 33 | 13 | ✅ |
+| 34 | 14 | ✅ |
+| 35 | 15 | ✅ |
+| 36 | 16 | ✅ |
 ## Usage
 
 ### Basic Usage

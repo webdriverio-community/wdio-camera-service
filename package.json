@@ -32,15 +32,20 @@
     "lint": "eslint --fix",
     "prebuild": "rimraf build --glob ./*.tgz",
     "build": "tsc",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:run": "vitest run",
     "test:local": "pnpm run build && cd sandbox && pnpm i && pnpm test",
     "prepare": "husky"
   },
   "devDependencies": {
+    "@vitest/ui": "^3.2.4",
     "@wdio/eslint": "^0.1.2",
     "eslint": "^9.31.0",
     "husky": "^9.1.7",
     "rimraf": "^6.0.1",
-    "typescript": "5.8"
+    "typescript": "5.8",
+    "vitest": "^3.2.4"
   },
   "peerDependencies": {
     "@wdio/globals": ">=9.0.0",
