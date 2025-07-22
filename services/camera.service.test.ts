@@ -79,6 +79,7 @@ describe('CameraService', () => {
     const mockCapabilities = {
       browserName: 'chrome',
       platformName: 'desktop',
+      'goog:chromeOptions': undefined,
     };
 
     beforeEach(() => {
@@ -179,6 +180,7 @@ describe('CameraService', () => {
       const capabilities = {
         browserName: 'Google Chrome',
         platformName: 'desktop',
+        'goog:chromeOptions': undefined,
       };
 
       service.onWorkerStart('test-cid', capabilities, [], {}, []);
