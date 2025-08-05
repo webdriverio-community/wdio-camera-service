@@ -1,4 +1,5 @@
-import CameraService from '../services/camera.service';
+import CameraService from '../services/camera.service.js';
+
 export default CameraService;
 export const launcher = CameraService;
 
