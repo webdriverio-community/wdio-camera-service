@@ -41,9 +41,9 @@
   "devDependencies": {
     "@vitest/ui": "^4.0.13",
     "@wdio/eslint": "^0.1.2",
-    "eslint": "^9.39.0",
+    "eslint": "^9.39.1",
     "husky": "^9.1.7",
-    "rimraf": "^6.1.0",
+    "rimraf": "^6.1.2",
     "typescript": "5.9",
     "vitest": "^4.0.13"
   },
