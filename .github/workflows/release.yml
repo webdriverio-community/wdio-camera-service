@@ -18,6 +18,7 @@ on:
         default: 'latest'
 
 env:
+  GITHUB_TOKEN: ${{ secrets.WDIO_BOT_GITHUB_TOKEN }}
   NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
   NPM_CONFIG_PROVENANCE: true
 
