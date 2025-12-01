@@ -39,13 +39,13 @@
     "prepare": "husky"
   },
   "devDependencies": {
-    "@vitest/ui": "^4.0.13",
+    "@vitest/ui": "^4.0.14",
     "@wdio/eslint": "^0.1.2",
     "eslint": "^9.39.1",
     "husky": "^9.1.7",
     "rimraf": "^6.1.2",
     "typescript": "5.9",
-    "vitest": "^4.0.13"
+    "vitest": "^4.0.14"
   },
   "peerDependencies": {
     "@wdio/globals": ">=9.0.0",
