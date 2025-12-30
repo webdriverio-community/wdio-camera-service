@@ -16,6 +16,14 @@ on:
         description: 'NPM tag (e.g. use "next" to release a test version)'
         required: true
         default: 'latest'
+      preRelease:
+        description: If latest release was a pre-release (e.g. X.X.X-alpha.0) and you want to push another one, pick "yes"
+        required: true
+        type: choice
+        default: "no"
+        options:
+          - "yes"
+          - "no"
 
 env:
   NPM_CONFIG_PROVENANCE: true
@@ -43,13 +51,22 @@ jobs:
       - name: Git Setup
         run: |
           git config --global user.email "bot@webdriver.io"
-          git config --global user.name "WebdriverIO Bot"
+          git config --global user.name "WebdriverIO Release Bot"
 
       - name: Install Dependencies
         run: pnpm install
 
       - name: Build
-        run: npm run build
+        run: pnpm run build
 
       - name: Release
         run: npx release-it ${{github.event.inputs.releaseType}} --github.release --ci --npm.skipChecks --no-git.requireCleanWorkingDir --npm.tag=${{github.event.inputs.distTag}}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        if: ${{ github.event.inputs.preRelease == 'no' }}
+
+      - name: Pre-Release
+        run: npx release-it ${{github.event.inputs.releaseType}} --github.release --ci --npm.skipChecks --no-git.requireCleanWorkingDir --preRelease=alpha --github.preRelease --npm.tag=next
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        if: ${{ github.event.inputs.preRelease == 'yes' }}
