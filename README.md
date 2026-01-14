@@ -1,13 +1,16 @@
 # WebdriverIO Camera Service
 
-A WebdriverIO service that enables camera feed injection for testing applications that use camera/video inputs. This service allows you to mock camera feeds with pre-recorded video files during automated testing.
+A WebdriverIO service that enables camera feed injection for testing
+applications that use camera/video inputs. This service allows you to mock
+camera feeds with pre-recorded video files during automated testing.
 
 ## Features
 
 - 🎥 Inject custom video feeds into Chrome browsers during testing
 - 🔄 Dynamically change camera sources during test execution
 - 📁 Automatic video directory management
-- 🧪 Perfect for testing camera-dependent applications like QR code scanners, video conferencing, etc.
+- 🧪 Perfect for testing camera-dependent applications like QR code scanners,
+  video conferencing, etc.
 
 ## Installation
 
@@ -36,9 +39,9 @@ export const config: WebdriverIO.Config = {
 ### Service Options
 
 | Option | Type | Required | Description |
-|--------|------|----------|-------------|
-| `defaultCameraFeed` | string | ✅ | Path to the default MJPEG video file to use as camera feed |
-| `videoDirectory` | string | ✅ | Directory where session-specific video files will be stored |
+| --- | --- | --- | --- |
+| `defaultCameraFeed` | string | ✅ | Path to the default MJPEG video file |
+| `videoDirectory` | string | ✅ | Directory for session-specific video files |
 
 ## Browser Support
 
@@ -47,16 +50,19 @@ export const config: WebdriverIO.Config = {
 - ❌ **Safari** - Not supported
 - ❌ **Edge** - Not supported (unless Chromium-based)
 
-> **Note**: This service only works with Chrome/Chromium browsers as it relies on Chrome-specific command line arguments for camera mocking.
+> **Note**: This service only works with Chrome/Chromium browsers as it relies
+> on Chrome-specific command line arguments for camera mocking.
 
 ### Android SDK Supports (With Chrome)
+
 | SDK | Version | Support? |
 |-----|---------|----------|
-| 31 | 12 | ✅ |
-| 33 | 13 | ✅ |
-| 34 | 14 | ✅ |
-| 35 | 15 | ✅ |
-| 36 | 16 | ✅ |
+| 31  | 12      | ✅       |
+| 33  | 13      | ✅       |
+| 34  | 14      | ✅       |
+| 35  | 15      | ✅       |
+| 36  | 16      | ✅       |
+
 ## Usage
 
 ### Basic Usage
@@ -98,7 +104,7 @@ describe('Camera Tests', () => {
 
 ## File Structure
 
-```
+```text
 project/
 ├── camera/
 │   ├── default.mjpeg          # Default camera feed
@@ -139,11 +145,14 @@ ffmpeg -i input.mp4 -vcodec mjpeg -q:v 2 -r 30 output.mjpeg
 Changes the active camera source to a different video file.
 
 **Parameters:**
-- `videoFilePath` (string): Path to the new MJPEG video file (relative to project root)
 
-**Returns:** Promise<void>
+- `videoFilePath` (string): Path to the new MJPEG video file
+  (relative to project root)
+
+**Returns:** `Promise<void>`
 
 **Example:**
+
 ```typescript
 await browser.changeCameraSource('camera/new-feed.mjpeg');
 ```
@@ -152,9 +161,11 @@ await browser.changeCameraSource('camera/new-feed.mjpeg');
 
 The service will throw errors in the following cases:
 
-- **Missing configuration**: When `defaultCameraFeed` or `videoDirectory` is not specified
+- **Missing configuration**: When `defaultCameraFeed` or `videoDirectory`
+  is not specified
 - **File not found**: When the specified video file doesn't exist
-- **Unsupported browser**: When used with non-Chrome browsers (logs warning instead of error)
+- **Unsupported browser**: When used with non-Chrome browsers
+  (logs warning instead of error)
 
 ## Example Test Cases
 
