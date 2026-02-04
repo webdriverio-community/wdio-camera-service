@@ -474,9 +474,9 @@ describe('CameraService', () => {
         const newImagePath = 'new/image/qrcode.png';
         await changeCameraSourceFn(newImagePath);
 
-        // Should have called FFmpeg for image conversion with loop
+        // Should have called FFmpeg for image conversion (single frame)
         expect(mockExecAsync).toHaveBeenCalledWith(
-          expect.stringContaining('-loop 1'),
+          expect.stringContaining('-frames:v 1'),
         );
       });
     });

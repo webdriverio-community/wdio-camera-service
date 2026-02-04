@@ -9,8 +9,6 @@ import { FfmpegNotFoundError } from './errors.js';
 export interface CameraServiceOptions {
   defaultCameraFeed: string;
   videoDirectory: string;
-  imageFrameRate?: number;
-  imageDuration?: number;
   ffmpegPath?: string;
   cacheEnabled?: boolean;
   outputFormat?: 'mjpeg' | 'y4m';
@@ -51,8 +49,6 @@ export default class CameraService implements Services.ServiceInstance {
       videoDirectory: this._options.videoDirectory,
       ffmpegPath: this._options.ffmpegPath,
       cacheEnabled: this._options.cacheEnabled,
-      imageFrameRate: this._options.imageFrameRate,
-      imageDuration: this._options.imageDuration,
       outputFormat: this._options.outputFormat,
     });
     await this.converter.initialize();
@@ -109,8 +105,6 @@ export default class CameraService implements Services.ServiceInstance {
         videoDirectory: this._options.videoDirectory,
         ffmpegPath: this._options.ffmpegPath,
         cacheEnabled: this._options.cacheEnabled,
-        imageFrameRate: this._options.imageFrameRate,
-        imageDuration: this._options.imageDuration,
         outputFormat: this._options.outputFormat,
       });
       await this.converter.initialize();

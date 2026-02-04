@@ -48,9 +48,13 @@ describe('format-converter', () => {
       expect(detectFormat('/path/to/image.png')).toBe('image');
       expect(detectFormat('/path/to/image.jpg')).toBe('image');
       expect(detectFormat('/path/to/image.jpeg')).toBe('image');
-      expect(detectFormat('/path/to/image.gif')).toBe('image');
       expect(detectFormat('/path/to/image.bmp')).toBe('image');
       expect(detectFormat('/path/to/image.PNG')).toBe('image');
+    });
+
+    it('should detect gif as video format', () => {
+      expect(detectFormat('/path/to/image.gif')).toBe('video');
+      expect(detectFormat('/path/to/image.GIF')).toBe('video');
     });
 
     it('should return unknown for unsupported formats', () => {
@@ -89,8 +93,6 @@ describe('format-converter', () => {
         videoDirectory: '/videos',
         ffmpegPath: 'ffmpeg',
         cacheEnabled: true,
-        imageFrameRate: 30,
-        imageDuration: 5,
         outputFormat: 'mjpeg',
       });
 
@@ -220,7 +222,7 @@ describe('format-converter', () => {
         expect(result).toContain('.mjpeg');
       });
 
-      it('should convert image file with loop and duration', async () => {
+      it('should convert image file to single-frame MJPEG', async () => {
         mockFs.existsSync.mockImplementation((filePath) => {
           return !String(filePath).includes('.cache');
         });
@@ -230,7 +232,7 @@ describe('format-converter', () => {
         const result = await converter.convert('/path/to/image.png');
 
         expect(mockExecAsync).toHaveBeenCalledWith(
-          expect.stringMatching(/-loop 1.*-t 5.*-r 30.*-q:v 2/),
+          expect.stringMatching(/-frames:v 1.*-pix_fmt yuvj420p.*-q:v 2/),
         );
         expect(result).toContain('.mjpeg');
       });
