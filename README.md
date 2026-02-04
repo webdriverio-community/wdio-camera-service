@@ -44,8 +44,6 @@ export const config: WebdriverIO.Config = {
 |---------------------|----------------------|----------|------------|----------------------------------------------------|
 | `defaultCameraFeed` | string               | ✅        | -          | Path to the default video file                     |
 | `videoDirectory`    | string               | ✅        | -          | Directory for session-specific video files         |
-| `imageFrameRate`    | number               | ❌        | `30`       | Frame rate when converting images to video         |
-| `imageDuration`     | number               | ❌        | `5`        | Duration (seconds) when converting images to video |
 | `ffmpegPath`        | string               | ❌        | `'ffmpeg'` | Custom path to FFmpeg executable                   |
 | `cacheEnabled`      | boolean              | ❌        | `true`     | Enable caching of converted files                  |
 | `outputFormat`      | `'mjpeg'` \| `'y4m'` | ❌        | `'mjpeg'`  | Output format for converted files                  |
@@ -65,14 +63,14 @@ The service supports multiple input formats with automatic conversion:
 - `.webm` - WebM Video
 - `.avi` - AVI Video
 - `.mov` - QuickTime Video
+- `.gif` - GIF (animated or static)
 
 ### Image Formats (Requires FFmpeg)
 
-Images are converted to looping videos:
+Images are converted to a single-frame MJPEG (Chrome loops it automatically):
 
 - `.png` - PNG Image
 - `.jpg` / `.jpeg` - JPEG Image
-- `.gif` - GIF Image
 - `.bmp` - Bitmap Image
 
 ## FFmpeg Requirement
@@ -148,7 +146,7 @@ You can use various formats as your default camera feed:
 export const config: WebdriverIO.Config = {
   services: [
     ['camera', {
-      // Use a PNG image as the default feed (loops for 5 seconds at 30fps)
+      // Use a PNG image as the default feed (Chrome loops it automatically)
       defaultCameraFeed: './camera/qr-code.png',
       videoDirectory: './camera/video',
     }],
@@ -178,24 +176,6 @@ describe('Camera Tests', () => {
     await expect($('#qr-result')).toHaveText('QR Content');
   });
 });
-```
-
-### Customizing Image Conversion
-
-When using images, you can customize the frame rate and duration:
-
-```typescript
-// wdio.conf.ts
-export const config: WebdriverIO.Config = {
-  services: [
-    ['camera', {
-      defaultCameraFeed: './camera/static-image.png',
-      videoDirectory: './camera/video',
-      imageFrameRate: 24,   // 24 fps
-      imageDuration: 10,    // 10 second loop
-    }],
-  ],
-};
 ```
 
 ## File Structure
@@ -237,8 +217,8 @@ You can convert existing video files to MJPEG format using FFmpeg:
 # Convert MP4 to MJPEG
 ffmpeg -i input.mp4 -q:v 2 output.mjpeg
 
-# Convert image to looping MJPEG
-ffmpeg -loop 1 -i input.png -t 5 -r 30 -q:v 2 output.mjpeg
+# Convert image to single-frame MJPEG
+ffmpeg -i input.png -frames:v 1 -q:v 2 output.mjpeg
 ```
 
 ## API Reference
