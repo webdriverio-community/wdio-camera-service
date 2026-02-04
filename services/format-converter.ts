@@ -13,16 +13,16 @@ const EXTENSION_TO_FORMAT: Record<string, FormatType> = {
   // Native formats
   '.mjpeg': 'mjpeg',
   '.y4m': 'y4m',
-  // Video formats
+  // Video formats (including GIF - FFmpeg treats GIFs as video streams)
   '.mp4': 'video',
   '.webm': 'video',
   '.avi': 'video',
   '.mov': 'video',
-  // Image formats
+  '.gif': 'video',
+  // Image formats (static images only)
   '.png': 'image',
   '.jpg': 'image',
   '.jpeg': 'image',
-  '.gif': 'image',
   '.bmp': 'image',
 };
 
@@ -30,8 +30,6 @@ export interface FormatConverterOptions {
   videoDirectory: string;
   ffmpegPath?: string;
   cacheEnabled?: boolean;
-  imageFrameRate?: number;
-  imageDuration?: number;
   outputFormat?: 'mjpeg' | 'y4m';
 }
 
@@ -58,16 +56,12 @@ export class FormatConverter {
   private readonly cacheDir: string;
   private readonly ffmpegPath: string;
   private readonly cacheEnabled: boolean;
-  private readonly imageFrameRate: number;
-  private readonly imageDuration: number;
   private readonly outputFormat: 'mjpeg' | 'y4m';
 
   constructor(options: FormatConverterOptions) {
     this.cacheDir = path.join(options.videoDirectory, '.cache');
     this.ffmpegPath = options.ffmpegPath ?? 'ffmpeg';
     this.cacheEnabled = options.cacheEnabled ?? true;
-    this.imageFrameRate = options.imageFrameRate ?? 30;
-    this.imageDuration = options.imageDuration ?? 5;
     this.outputFormat = options.outputFormat ?? 'mjpeg';
   }
 
@@ -201,14 +195,14 @@ export class FormatConverter {
   }
 
   /**
-   * Convert an image to a looping MJPEG
-   * -loop 1: loop the input, -t: duration, -r: frame rate
+   * Convert an image to MJPEG (single frame, Chrome loops it)
+   * -frames:v 1: output single frame
    * -pix_fmt yuvj420p: convert to JPEG-compatible pixel format (fixes green output from RGBA images)
    * -f mjpeg: explicitly specify output format (needed for temp files)
    * -q:v 2: quality
    */
   private async convertImage(inputPath: string, outputPath: string): Promise<void> {
-    const command = `"${this.ffmpegPath}" -loop 1 -i "${inputPath}" -t ${this.imageDuration} -r ${this.imageFrameRate} -pix_fmt yuvj420p -f mjpeg -q:v 2 -y "${outputPath}"`;
+    const command = `"${this.ffmpegPath}" -i "${inputPath}" -frames:v 1 -pix_fmt yuvj420p -f mjpeg -q:v 2 -y "${outputPath}"`;
     await this.execFfmpeg(command, inputPath);
   }
 
