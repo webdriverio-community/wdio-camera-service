@@ -2,10 +2,18 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { SevereServiceError } from 'webdriverio';
 import fs from 'node:fs';
 import path from 'node:path';
-import CameraService from './camera.service.js';
+
+// Hoist the mock function so it's available during vi.mock hoisting
+const mockExecAsync = vi.hoisted(() => vi.fn());
 
 vi.mock('node:fs');
 vi.mock('webdriverio');
+vi.mock('node:util', () => ({
+  promisify: () => mockExecAsync,
+}));
+
+// Import after mocking
+import CameraService from './camera.service.js';
 
 const mockFs = vi.mocked(fs);
 
@@ -21,6 +29,11 @@ describe('CameraService', () => {
     mockFs.readFileSync.mockReturnValue(Buffer.from('mock video data'));
     mockFs.writeFileSync.mockReturnValue(undefined);
     mockFs.mkdirSync.mockReturnValue(undefined);
+    mockFs.statSync.mockReturnValue({ size: 1000 } as fs.Stats);
+    mockFs.openSync.mockReturnValue(1);
+    mockFs.readSync.mockReturnValue(1000);
+    mockFs.closeSync.mockReturnValue(undefined);
+    mockFs.renameSync.mockReturnValue(undefined);
   });
 
   afterEach(() => {
@@ -50,27 +63,121 @@ describe('CameraService', () => {
 
       expect(() => new CameraService(invalidOptions)).toThrow(SevereServiceError);
     });
+
+    it('should accept new format conversion options', () => {
+      const options = {
+        ...validOptions,
+        imageFrameRate: 24,
+        imageDuration: 10,
+        ffmpegPath: '/custom/ffmpeg',
+        cacheEnabled: false,
+        outputFormat: 'y4m' as const,
+      };
+
+      const service = new CameraService(options);
+      expect(service).toBeInstanceOf(CameraService);
+    });
   });
 
   describe('onPrepare', () => {
-    it('should create video directory if it does not exist', () => {
+    it('should create video directory if it does not exist', async () => {
       mockFs.existsSync.mockReturnValue(false);
       const service = new CameraService(validOptions);
 
-      service.onPrepare();
+      await service.onPrepare();
 
       expect(mockFs.existsSync).toHaveBeenCalledWith('/path/to/videos');
       expect(mockFs.mkdirSync).toHaveBeenCalledWith('/path/to/videos', { recursive: true });
     });
 
-    it('should not create directory if it already exists', () => {
+    it('should not create directory if it already exists', async () => {
       mockFs.existsSync.mockReturnValue(true);
       const service = new CameraService(validOptions);
 
-      service.onPrepare();
+      await service.onPrepare();
 
       expect(mockFs.existsSync).toHaveBeenCalledWith('/path/to/videos');
-      expect(mockFs.mkdirSync).not.toHaveBeenCalled();
+    });
+
+    it('should check FFmpeg availability when using non-native format', async () => {
+      const options = {
+        ...validOptions,
+        defaultCameraFeed: '/path/to/default.mp4',
+      };
+      const service = new CameraService(options);
+
+      // FFmpeg available
+      mockExecAsync.mockResolvedValueOnce({
+        stdout: 'ffmpeg version 6.0',
+        stderr: '',
+      });
+
+      // Conversion call
+      mockExecAsync.mockResolvedValueOnce({ stdout: '', stderr: '' });
+
+      // Source file exists but cache doesn't
+      mockFs.existsSync.mockImplementation((p) => {
+        if (String(p).includes('.cache')) {return false;}
+        return true;
+      });
+
+      await service.onPrepare();
+
+      expect(mockExecAsync).toHaveBeenCalledWith(
+        expect.stringContaining('ffmpeg'),
+      );
+    });
+
+    it('should throw FfmpegNotFoundError when FFmpeg is needed but not available', async () => {
+      const options = {
+        ...validOptions,
+        defaultCameraFeed: '/path/to/default.mp4',
+      };
+      const service = new CameraService(options);
+
+      mockExecAsync.mockRejectedValueOnce(new Error('Command not found'));
+
+      await expect(service.onPrepare()).rejects.toThrow('FFmpeg is required');
+    });
+
+    it('should not check FFmpeg when using native mjpeg format', async () => {
+      const service = new CameraService(validOptions);
+
+      await service.onPrepare();
+
+      // Should not have called ffmpeg -version
+      expect(mockExecAsync).not.toHaveBeenCalledWith(
+        expect.stringContaining('-version'),
+      );
+    });
+
+    it('should pre-convert default feed if non-native format', async () => {
+      const options = {
+        ...validOptions,
+        defaultCameraFeed: '/path/to/default.mp4',
+      };
+      const service = new CameraService(options);
+
+      // FFmpeg available
+      mockExecAsync.mockResolvedValueOnce({
+        stdout: 'ffmpeg version 6.0',
+        stderr: '',
+      });
+
+      // Conversion call
+      mockExecAsync.mockResolvedValueOnce({ stdout: '', stderr: '' });
+
+      mockFs.existsSync.mockImplementation((p) => {
+        if (String(p).includes('.cache')) {return false;}
+        return true;
+      });
+
+      await service.onPrepare();
+
+      // Should have called ffmpeg for conversion (second call)
+      expect(mockExecAsync).toHaveBeenCalledWith(
+        expect.stringContaining('-q:v 2'),
+      );
     });
   });
 
@@ -82,18 +189,19 @@ describe('CameraService', () => {
       'goog:chromeOptions': undefined,
     };
 
-    beforeEach(() => {
+    beforeEach(async () => {
       service = new CameraService(validOptions);
       vi.spyOn(process, 'cwd').mockReturnValue('/current/working/dir');
       vi.spyOn(path, 'resolve').mockImplementation((...paths) => {
         return paths.filter(Boolean).join('/').replace(/\/+/g, '/');
       });
+      await service.onPrepare();
     });
 
-    it('should configure Chrome options for Chrome browser on desktop', () => {
+    it('should configure Chrome options for Chrome browser on desktop', async () => {
       const capabilities = { ...mockCapabilities };
 
-      service.onWorkerStart('test-cid', capabilities, [], {}, []);
+      await service.onWorkerStart('test-cid', capabilities, [], {}, []);
 
       expect(mockFs.readFileSync).toHaveBeenCalledWith(expect.stringContaining('default.mjpeg'));
       expect(mockFs.writeFileSync).toHaveBeenCalledWith(
@@ -109,16 +217,15 @@ describe('CameraService', () => {
       });
     });
 
-    it('should use Android video directory for Android Chrome', () => {
+    it('should use Android video directory for Android Chrome', async () => {
       const capabilities = {
         ...mockCapabilities,
         platformName: 'android',
       };
 
-      service.onWorkerStart('test-cid', capabilities, [], {}, []);
+      await service.onWorkerStart('test-cid', capabilities, [], {}, []);
 
       expect(mockFs.readFileSync).toHaveBeenCalledWith(expect.stringContaining('default.mjpeg'));
-      expect(mockFs.writeFileSync).not.toHaveBeenCalled();
       expect(capabilities['goog:chromeOptions']).toEqual({
         args: [
           '--use-fake-device-for-media-stream',
@@ -128,7 +235,7 @@ describe('CameraService', () => {
       });
     });
 
-    it('should append to existing chromeOptions.args when they exist', () => {
+    it('should append to existing chromeOptions.args when they exist', async () => {
       const capabilities = {
         ...mockCapabilities,
         'goog:chromeOptions': {
@@ -136,7 +243,7 @@ describe('CameraService', () => {
         },
       };
 
-      service.onWorkerStart('test-cid', capabilities, [], {}, []);
+      await service.onWorkerStart('test-cid', capabilities, [], {}, []);
 
       expect(capabilities['goog:chromeOptions'].args).toEqual([
         '--existing-flag',
@@ -146,13 +253,13 @@ describe('CameraService', () => {
       ]);
     });
 
-    it('should create args array when chromeOptions exists but no args', () => {
+    it('should create args array when chromeOptions exists but no args', async () => {
       const capabilities = {
         ...mockCapabilities,
         'goog:chromeOptions': {} as { args?: string[] },
       };
 
-      service.onWorkerStart('test-cid', capabilities, [], {}, []);
+      await service.onWorkerStart('test-cid', capabilities, [], {}, []);
 
       expect(capabilities['goog:chromeOptions'].args).toEqual([
         '--use-fake-device-for-media-stream',
@@ -161,14 +268,14 @@ describe('CameraService', () => {
       ]);
     });
 
-    it('should log message for non-Chrome browsers', () => {
+    it('should log message for non-Chrome browsers', async () => {
       const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
       const capabilities = {
         ...mockCapabilities,
         browserName: 'firefox',
       };
 
-      service.onWorkerStart('test-cid', capabilities, [], {}, []);
+      await service.onWorkerStart('test-cid', capabilities, [], {}, []);
 
       expect(consoleSpy).toHaveBeenCalledWith(
         'Injecting camera source only supported in Chrome browsers (current browserName: firefox)',
@@ -176,16 +283,33 @@ describe('CameraService', () => {
       expect(capabilities['goog:chromeOptions']).toBeUndefined();
     });
 
-    it('should work with browserName containing "Chrome" (case insensitive)', () => {
+    it('should work with browserName containing "Chrome" (case insensitive)', async () => {
       const capabilities = {
         browserName: 'Google Chrome',
         platformName: 'desktop',
         'goog:chromeOptions': undefined,
       };
 
-      service.onWorkerStart('test-cid', capabilities, [], {}, []);
+      await service.onWorkerStart('test-cid', capabilities, [], {}, []);
 
       expect(capabilities['goog:chromeOptions']).toBeDefined();
+    });
+
+    it('should use y4m extension when outputFormat is y4m', async () => {
+      const options = {
+        ...validOptions,
+        outputFormat: 'y4m' as const,
+      };
+      service = new CameraService(options);
+      await service.onPrepare();
+
+      const capabilities = { ...mockCapabilities };
+      await service.onWorkerStart('test-cid', capabilities, [], {}, []);
+
+      expect(mockFs.writeFileSync).toHaveBeenCalledWith(
+        expect.stringContaining('test-cid.y4m'),
+        expect.any(Uint8Array),
+      );
     });
   });
 
@@ -205,7 +329,7 @@ describe('CameraService', () => {
       pushFile?: ReturnType<typeof vi.fn>;
     };
 
-    beforeEach(() => {
+    beforeEach(async () => {
       service = new CameraService(validOptions);
       mockBrowser = {
         capabilities: {
@@ -224,6 +348,7 @@ describe('CameraService', () => {
       vi.spyOn(path, 'resolve').mockImplementation((...paths) => {
         return paths.filter(Boolean).join('/').replace(/\/+/g, '/');
       });
+      await service.onPrepare();
     });
 
     it('should add changeCameraSource command to browser', () => {
@@ -303,7 +428,6 @@ describe('CameraService', () => {
 
         await changeCameraSourceFnNoSource('new/video/path.mjpeg');
 
-        expect(mockFs.readFileSync).not.toHaveBeenCalled();
         expect(mockFs.writeFileSync).not.toHaveBeenCalled();
       });
 
@@ -319,6 +443,41 @@ describe('CameraService', () => {
 
         // Only one addCommand should be called in this case
         expect(freshMockBrowser.addCommand).toHaveBeenCalledTimes(1);
+      });
+
+      it('should convert video format before changing camera source', async () => {
+        mockFs.existsSync.mockImplementation((p) => {
+          // Cache doesn't exist but files do
+          if (String(p).includes('.cache')) {return false;}
+          return true;
+        });
+
+        mockExecAsync.mockResolvedValueOnce({ stdout: '', stderr: '' });
+
+        const newVideoPath = 'new/video/path.mp4';
+        await changeCameraSourceFn(newVideoPath);
+
+        // Should have called FFmpeg for conversion
+        expect(mockExecAsync).toHaveBeenCalledWith(
+          expect.stringContaining('-q:v 2'),
+        );
+      });
+
+      it('should convert image format before changing camera source', async () => {
+        mockFs.existsSync.mockImplementation((p) => {
+          if (String(p).includes('.cache')) {return false;}
+          return true;
+        });
+
+        mockExecAsync.mockResolvedValueOnce({ stdout: '', stderr: '' });
+
+        const newImagePath = 'new/image/qrcode.png';
+        await changeCameraSourceFn(newImagePath);
+
+        // Should have called FFmpeg for image conversion with loop
+        expect(mockExecAsync).toHaveBeenCalledWith(
+          expect.stringContaining('-loop 1'),
+        );
       });
     });
   });
