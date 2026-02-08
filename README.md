@@ -100,7 +100,7 @@ winget install FFmpeg
 choco install ffmpeg
 ```
 
-Or download from: <https://ffmpeg.org/download.html>
+Or download from: [ffmpeg.org](https://ffmpeg.org/download.html)
 
 ## Browser Support
 
