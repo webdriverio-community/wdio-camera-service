@@ -12,6 +12,7 @@
       "@wdio/globals/types",
       "expect-webdriverio",
       "@wdio/mocha-framework",
+      "@wdio/visual-service",
       "wdio-camera-service"
     ],
     "skipLibCheck": true,

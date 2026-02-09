@@ -13,9 +13,13 @@ export const config: WebdriverIO.Config = {
 
   capabilities: [{
     browserName: 'chrome',
+    'goog:chromeOptions': {
+      // args: ['--disable-gpu', '--headless=new', '--disable-dev-shm-usage'],
+      args: ['--headless=new', '--disable-dev-shm-usage'],
+    },
   }],
 
-  logLevel: 'error',
+  logLevel: 'warn',
 
   bail: 0,
 
@@ -25,6 +29,7 @@ export const config: WebdriverIO.Config = {
   connectionRetryCount: 3,
 
   services: [
+    ['visual', {}],
     ['camera', {
       defaultCameraFeed: './camera/default.mjpeg',
       videoDirectory: './camera/video',

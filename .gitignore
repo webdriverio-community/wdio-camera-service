@@ -8,3 +8,4 @@ build
 *.tgz
 
 sandbox/camera/video
+sandbox/.tmp
