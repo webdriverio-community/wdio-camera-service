@@ -6,8 +6,13 @@ import path from 'node:path';
 // Hoist the mock function so it's available during vi.mock hoisting
 const mockExecAsync = vi.hoisted(() => vi.fn());
 
+const mockLogWarn = vi.hoisted(() => vi.fn());
+
 vi.mock('node:fs');
 vi.mock('webdriverio');
+vi.mock('@wdio/logger', () => ({
+  default: () => ({ warn: mockLogWarn }),
+}));
 vi.mock('node:util', () => ({
   promisify: () => mockExecAsync,
 }));
@@ -293,6 +298,62 @@ describe('CameraService', () => {
       await service.onWorkerStart('test-cid', capabilities, [], {}, []);
 
       expect(capabilities['goog:chromeOptions']).toBeDefined();
+    });
+
+    it('should warn when --disable-gpu is present on macOS', async () => {
+      const originalPlatform = process.platform;
+      Object.defineProperty(process, 'platform', { value: 'darwin' });
+
+      const capabilities = {
+        ...mockCapabilities,
+        'goog:chromeOptions': {
+          args: ['--disable-gpu', '--headless=new'],
+        },
+      };
+
+      await service.onWorkerStart('test-cid', capabilities, [], {}, []);
+
+      expect(mockLogWarn).toHaveBeenCalledWith(
+        expect.stringContaining('--disable-gpu'),
+      );
+
+      Object.defineProperty(process, 'platform', { value: originalPlatform });
+    });
+
+    it('should not warn about --disable-gpu on non-macOS platforms', async () => {
+      const originalPlatform = process.platform;
+      Object.defineProperty(process, 'platform', { value: 'linux' });
+
+      const capabilities = {
+        ...mockCapabilities,
+        'goog:chromeOptions': {
+          args: ['--disable-gpu', '--headless=new'],
+        },
+      };
+
+      await service.onWorkerStart('test-cid', capabilities, [], {}, []);
+
+      expect(mockLogWarn).not.toHaveBeenCalled();
+
+      Object.defineProperty(process, 'platform', { value: originalPlatform });
+    });
+
+    it('should not warn when --disable-gpu is absent on macOS', async () => {
+      const originalPlatform = process.platform;
+      Object.defineProperty(process, 'platform', { value: 'darwin' });
+
+      const capabilities = {
+        ...mockCapabilities,
+        'goog:chromeOptions': {
+          args: ['--headless=new'],
+        },
+      };
+
+      await service.onWorkerStart('test-cid', capabilities, [], {}, []);
+
+      expect(mockLogWarn).not.toHaveBeenCalled();
+
+      Object.defineProperty(process, 'platform', { value: originalPlatform });
     });
 
     it('should use y4m extension when outputFormat is y4m', async () => {

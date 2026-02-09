@@ -1,10 +1,13 @@
 import type { Options, Services } from '@wdio/types';
 import { SevereServiceError } from 'webdriverio';
+import logger from '@wdio/logger';
 import fs from 'node:fs';
 import path from 'node:path';
 import { FormatConverter, requiresConversion } from './format-converter.js';
 import { checkFfmpegAvailability, getInstallationInstructions } from './ffmpeg-checker.js';
 import { FfmpegNotFoundError } from './errors.js';
+
+const log = logger('wdio-camera-service');
 
 export interface CameraServiceOptions {
   defaultCameraFeed: string;
@@ -67,6 +70,17 @@ export default class CameraService implements Services.ServiceInstance {
     _execArgv: string[],
   ): Promise<void> {
     if (capabilities.browserName?.toLowerCase().includes('chrom')) {
+      // Warn if --disable-gpu is used on macOS — it kills the Metal rendering pipeline
+      // and causes black screen with fake video capture
+      const existingArgs = capabilities['goog:chromeOptions']?.args as string[] | undefined;
+      if (process.platform === 'darwin' && existingArgs?.some((arg) => arg === '--disable-gpu')) {
+        log.warn(
+          'Detected "--disable-gpu" on macOS. This flag disables the Metal rendering pipeline '
+          + 'and will likely cause Chrome camera injection to produce a black screen.\n'
+          + 'Consider removing "--disable-gpu" from your Chrome arguments on macOS.',
+        );
+      }
+
       // Use converted feed if available, otherwise use original
       const feedPath = this.convertedDefaultFeed ?? this._options.defaultCameraFeed;
       const baseFeed = fs.readFileSync(path.resolve(process.cwd(), feedPath));
@@ -114,7 +128,7 @@ export default class CameraService implements Services.ServiceInstance {
 
     this.browser.addCommand(
       'changeCameraSource',
-      async (videoPath: string) => {
+      async (videoPath: string): Promise<void> => {
         const isChrome = this.browser?.capabilities.browserName?.toLowerCase().includes('chrome');
         const isAndroid = this.browser?.capabilities.platformName?.toLowerCase().includes('android');
 
